@@ -10,6 +10,7 @@ Personal CLI for development.
 
 - Serve directories with live-reload support
 - Watch for changes and re-execute a command
+- Finds the next available port
 
 ## Install
 

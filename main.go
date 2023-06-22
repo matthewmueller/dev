@@ -8,6 +8,9 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/livebud/cli"
@@ -29,13 +32,15 @@ func main() {
 
 func run() error {
 	cli := cli.New("dev", "personal dev tooling")
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	{ // serve [flags] [dir]
 		cmd := new(Serve)
 		cli := cli.Command("serve", "serve a directory")
 		cli.Flag("listen", "address to listen on").String(&cmd.Listen).Default(":3000")
 		cli.Flag("live", "enable live reloading").Bool(&cmd.Live).Default(true)
+		cli.Flag("open", "open browser").Bool(&cmd.Browser).Default(true)
 		cli.Arg("dir").String(&cmd.Dir).Default(".")
 		cli.Run(cmd.Run)
 	}
@@ -54,29 +59,45 @@ func run() error {
 }
 
 type Serve struct {
-	Listen string
-	Live   bool
-	Dir    string
+	Listen  string
+	Live    bool
+	Dir     string
+	Browser bool
 }
 
 func (s *Serve) Run(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	ps := pubsub.New()
-	eg.Go(s.serve(ctx, ps))
+	host, portStr, err := net.SplitHostPort(s.Listen)
+	if err != nil {
+		return err
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return err
+	}
+	// Find the next available port
+	ln, port, err := findNextPort(host, port)
+	if err != nil {
+		return err
+	}
+	url := formatAddr(host, port)
+	fmt.Println("Listening on", url)
+	eg.Go(s.serve(ctx, ln, ps))
 	if s.Live {
 		eg.Go(s.watch(ctx, ps))
+	}
+	if s.Browser {
+		if err := exec.CommandContext(ctx, "open", url).Run(); err != nil {
+			return err
+		}
 	}
 	return eg.Wait()
 }
 
-func (s *Serve) serve(ctx context.Context, ps pubsub.Subscriber) func() error {
+func (s *Serve) serve(ctx context.Context, ln net.Listener, ps pubsub.Subscriber) func() error {
 	return func() error {
 		fs := http.FileServer(http.FS(s))
-		ln, err := net.Listen("tcp", s.Listen)
-		if err != nil {
-			return err
-		}
-		fmt.Println("Listening on", formatAddr(ln.Addr()))
 		return graceful.Serve(ctx, ln, s.handler(hot.New(ps), fs))
 	}
 }
@@ -114,8 +135,20 @@ es.onmessage = function(e) { window.location.reload(); }
 </script>
 `
 
+const htmlPage = `<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+</head>
+<body>
+	%s
+	%s
+</body>
+</html>
+`
+
 func (s *Serve) Open(name string) (fs.File, error) {
-	f, err := os.Open(name)
+	f, err := os.Open(filepath.Join(s.Dir, name))
 	if err != nil {
 		return nil, err
 	}
@@ -139,8 +172,10 @@ func (s *Serve) Open(name string) (fs.File, error) {
 		return nil, err
 	}
 	contentType := http.DetectContentType(firstBytes)
+	isHTML := isHTML(contentType)
+	allAscii := allAscii(firstBytes)
 	// If the content type isn't HTML, just return the file
-	if !strings.Contains(contentType, "text/html") {
+	if !isHTML && !allAscii {
 		return f, nil
 	}
 	// If we detect HTML, inject the live reload script
@@ -153,7 +188,11 @@ func (s *Serve) Open(name string) (fs.File, error) {
 		return nil, err
 	}
 	// Inject the live reload script
-	html = append(html, []byte(liveReloadScript)...)
+	if isHTML {
+		html = append(html, []byte(liveReloadScript)...)
+	} else {
+		html = []byte(fmt.Sprintf(htmlPage, liveReloadScript, string(html)))
+	}
 	// Create a buffered file
 	bf := &virtual.File{
 		Path:    name,
@@ -162,6 +201,19 @@ func (s *Serve) Open(name string) (fs.File, error) {
 		ModTime: fi.ModTime(),
 	}
 	return bf.Open(), nil
+}
+
+func isHTML(contentType string) bool {
+	return strings.Contains(contentType, "text/html")
+}
+
+func allAscii(b []byte) bool {
+	for _, c := range b {
+		if c > 127 {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Serve) watch(ctx context.Context, ps pubsub.Publisher) func() error {
@@ -220,20 +272,20 @@ func clear() {
 	fmt.Fprint(os.Stdout, "\033[H\033[2J")
 }
 
-func formatAddr(addr net.Addr) string {
-	address := addr.String()
-	if addr.Network() == "unix" {
-		return address
+// Find the next available port starting at 3000
+func findNextPort(host string, port int) (net.Listener, int, error) {
+	for i := 0; i < 100; i++ {
+		ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port+i))
+		if err == nil {
+			return ln, port + i, nil
+		}
 	}
-	host, port, err := net.SplitHostPort(address)
-	if err != nil {
-		// Give up trying to format.
-		// TODO: figure out if this can occur.
-		return address
-	}
-	// https://serverfault.com/a/444557
-	if host == "::" {
+	return nil, 0, fmt.Errorf("could not find an available port")
+}
+
+func formatAddr(host string, port int) string {
+	if host == "" {
 		host = "0.0.0.0"
 	}
-	return fmt.Sprintf("http://%s:%s", host, port)
+	return fmt.Sprintf("http://%s:%d", host, port)
 }
