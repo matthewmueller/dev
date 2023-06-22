@@ -123,6 +123,7 @@ func (s *Serve) handler(live http.Handler, fs http.Handler) http.Handler {
 		case "/.live":
 			live.ServeHTTP(w, r)
 		default:
+			w.Header().Set("Cache-Control", "no-store")
 			fs.ServeHTTP(w, r)
 		}
 	})
