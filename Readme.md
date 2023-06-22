@@ -2,7 +2,7 @@
 
 Personal CLI for development.
 
-![cli](https://github.com/matthewmueller/dev/assets/170299/ec51c677-7791-4f17-ab1c-328f8e5f06ca)
+![cli](https://github.com/matthewmueller/dev/assets/170299/7ef4e9e5-a529-4030-a480-730a2e53c32b)
 
 ## Features
 
