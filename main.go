@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -11,7 +12,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/livebud/cli"
 	"github.com/livebud/watcher"
@@ -149,6 +149,9 @@ const htmlPage = `<!doctype html>
 `
 
 func (s *Serve) Open(name string) (fs.File, error) {
+	if filepath.Ext(name) != ".html" {
+		return os.Open(filepath.Join(s.Dir, name))
+	}
 	f, err := os.Open(filepath.Join(s.Dir, name))
 	if err != nil {
 		return nil, err
@@ -161,24 +164,7 @@ func (s *Serve) Open(name string) (fs.File, error) {
 	if fi.IsDir() {
 		return f, nil
 	}
-	// Peak at the first 512 bytes of the file or the entire file
-	// (whichever is smaller) and attempt to infer the content type
-	// from its contents.
-	firstBytes := make([]byte, 512)
-	if _, err = io.ReadFull(f, firstBytes); err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
-		return nil, err
-	}
-	// Seek back to the start
-	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		return nil, err
-	}
-	contentType := http.DetectContentType(firstBytes)
-	isHTML := isHTML(contentType)
-	allAscii := allAscii(firstBytes)
-	// If the content type isn't HTML, just return the file
-	if !isHTML && !allAscii {
-		return f, nil
-	}
+	defer f.Close()
 	// If we detect HTML, inject the live reload script
 	html, err := io.ReadAll(f)
 	if err != nil {
@@ -189,7 +175,7 @@ func (s *Serve) Open(name string) (fs.File, error) {
 		return nil, err
 	}
 	// Inject the live reload script
-	if isHTML {
+	if bytes.Contains(html, []byte("<html>")) {
 		html = append(html, []byte(liveReloadScript)...)
 	} else {
 		html = []byte(fmt.Sprintf(htmlPage, liveReloadScript, string(html)))
@@ -202,19 +188,6 @@ func (s *Serve) Open(name string) (fs.File, error) {
 		ModTime: fi.ModTime(),
 	}
 	return bf.Open(), nil
-}
-
-func isHTML(contentType string) bool {
-	return strings.Contains(contentType, "text/html")
-}
-
-func allAscii(b []byte) bool {
-	for _, c := range b {
-		if c > 127 {
-			return false
-		}
-	}
-	return true
 }
 
 func (s *Serve) watch(ctx context.Context, ps pubsub.Publisher) func() error {
