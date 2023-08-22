@@ -15,7 +15,7 @@ Personal CLI for development.
 ## Install
 
 ```sh
-go install github.com/matthewmueller/dev
+go install github.com/matthewmueller/dev@latest
 dev -h
 ```
 
