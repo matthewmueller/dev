@@ -1,3 +1,8 @@
+# 0.0.4 / 2024-09-11
+
+- add makefile
+- fix for <html lang='en'>
+
 # 0.0.3 / 2023-08-22
 
 - better livereload support
