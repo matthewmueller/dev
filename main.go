@@ -171,11 +171,11 @@ func (s *Serve) Open(name string) (fs.File, error) {
 		return nil, err
 	}
 	// Close the existing file because we don't need it anymore
-	if f.Close(); err != nil {
+	if err := f.Close(); err != nil {
 		return nil, err
 	}
 	// Inject the live reload script
-	if bytes.Contains(html, []byte("<html>")) {
+	if bytes.Contains(html, []byte("<html")) {
 		html = append(html, []byte(liveReloadScript)...)
 	} else {
 		html = []byte(fmt.Sprintf(htmlPage, liveReloadScript, string(html)))
