@@ -1,3 +1,8 @@
+# 0.0.5 / 2025-03-30
+
+- add ability to include and exclude patterns
+- move everything into a cli package
+
 # 0.0.4 / 2024-09-11
 
 - add makefile
