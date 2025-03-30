@@ -36,13 +36,9 @@ func (c *CLI) Watch(ctx context.Context, in *Watch) error {
 	if err != nil {
 		return fmt.Errorf("failed to format command %s %+v: %w", in.Command, in.Args, err)
 	}
-	includes, err := includer(in.Includes...)
+	match, err := matcher(in.Includes, in.Excludes)
 	if err != nil {
-		return fmt.Errorf("failed to parse include patterns: %w", err)
-	}
-	excludes, err := excluder(in.Excludes...)
-	if err != nil {
-		return fmt.Errorf("failed to parse exclude patterns: %w", err)
+		return fmt.Errorf("failed to create matcher: %w", err)
 	}
 	if err := cmd.Start(ctx, command, args...); err != nil {
 		// Don't exit on errors
@@ -53,7 +49,7 @@ func (c *CLI) Watch(ctx context.Context, in *Watch) error {
 		if len(events) == 0 {
 			return nil
 		}
-		if !match(events, includes, excludes) {
+		if !match(events) {
 			return nil
 		}
 		if in.Clear {
@@ -101,16 +97,31 @@ func isMultipleCommands(cmd string) bool {
 	return false
 }
 
-func match(events []watcher.Event, includes func(path string) bool, excludes func(path string) bool) bool {
-	// Check if any of the events match the include/exclude rules
-	for _, event := range events {
-		if !excludes(event.Path) {
-			if includes(event.Path) {
-				return true // At least one event matches the include rules
+func matcher(includes []string, excludes []string) (func(events []watcher.Event) bool, error) {
+	// Create include matcher
+	include, err := includer(includes...)
+	if err != nil {
+		return nil, err
+	}
+	// Create exclude matcher
+	exclude, err := excluder(excludes...)
+	if err != nil {
+		return nil, err
+	}
+	// Return the final matcher function
+	return func(events []watcher.Event) bool {
+		// Check if any of the events match the include/exclude rules
+		for _, event := range events {
+			if !exclude(event.Path) {
+				if include(event.Path) {
+					// At least one event matches the include rules
+					return true
+				}
 			}
 		}
-	}
-	return false // No events matched the include rules
+		// No events matched the include rules
+		return false
+	}, nil
 }
 
 func isGlob(pattern string) bool {

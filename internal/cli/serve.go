@@ -53,10 +53,12 @@ const htmlPage = `<!doctype html>
 `
 
 type Serve struct {
-	Listen  string
-	Live    bool
-	Dir     string
-	Browser bool
+	Listen   string
+	Live     bool
+	Dir      string
+	Browser  bool
+	Includes []string
+	Excludes []string
 }
 
 func (c *CLI) Serve(ctx context.Context, in *Serve) error {
@@ -75,11 +77,15 @@ func (c *CLI) Serve(ctx context.Context, in *Serve) error {
 	if err != nil {
 		return err
 	}
+	match, err := matcher(in.Includes, in.Excludes)
+	if err != nil {
+		return fmt.Errorf("failed to create matcher: %w", err)
+	}
 	url := formatAddr(host, port)
 	fmt.Println("Listening on", url)
 	eg.Go(c.serveDir(ctx, ln, ps, in.Dir))
 	if in.Live {
-		eg.Go(c.watchDir(ctx, ps, in.Dir))
+		eg.Go(c.watchDir(ctx, ps, in.Dir, match))
 	}
 	if in.Browser {
 		if err := exec.CommandContext(ctx, "open", url).Run(); err != nil {
@@ -111,10 +117,12 @@ func handler(live http.Handler, fs http.Handler) http.Handler {
 	})
 }
 
-func (c *CLI) watchDir(ctx context.Context, ps pubsub.Publisher, dir string) func() error {
+func (c *CLI) watchDir(ctx context.Context, ps pubsub.Publisher, dir string, match func(events []watcher.Event) bool) func() error {
 	return func() error {
 		return watcher.Watch(ctx, dir, func(events []watcher.Event) error {
 			if len(events) == 0 {
+				return nil
+			} else if !match(events) {
 				return nil
 			}
 			event := events[0]

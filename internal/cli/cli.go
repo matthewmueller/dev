@@ -30,12 +30,14 @@ func (c *CLI) Parse(ctx context.Context, args ...string) error {
 
 	{ // serve [flags] [dir]
 		in := new(Serve)
-		cli := cli.Command("serve", "serve a directory")
-		cli.Flag("listen", "address to listen on").String(&in.Listen).Default(":3000")
-		cli.Flag("live", "enable live reloading").Bool(&in.Live).Default(true)
-		cli.Flag("open", "open browser").Bool(&in.Browser).Default(true)
-		cli.Arg("dir").String(&in.Dir).Default(".")
-		cli.Run(func(ctx context.Context) error { return c.Serve(ctx, in) })
+		cmd := cli.Command("serve", "serve a directory")
+		cmd.Flag("include", "include files matching pattern").Short('I').Strings(&in.Includes).Default()
+		cmd.Flag("exclude", "exclude files matching pattern").Short('E').Strings(&in.Excludes).Default()
+		cmd.Flag("listen", "address to listen on").String(&in.Listen).Default(":3000")
+		cmd.Flag("live", "enable live reloading").Bool(&in.Live).Default(true)
+		cmd.Flag("open", "open browser").Bool(&in.Browser).Default(true)
+		cmd.Arg("dir").String(&in.Dir).Default(".")
+		cmd.Run(func(ctx context.Context) error { return c.Serve(ctx, in) })
 	}
 
 	{ // watch [flags] [dir]
