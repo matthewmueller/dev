@@ -41,8 +41,9 @@ func (c *CLI) Parse(ctx context.Context, args ...string) error {
 	{ // watch [flags] [dir]
 		in := new(Watch)
 		cmd := cli.Command("watch", "watch a directory")
-		cmd.Flag("ignore", "ignore files matching pattern").Strings(&in.Ignore).Default()
-		cmd.Flag("clear", "clear screen every change").Bool(&in.Clear).Default(true)
+		cmd.Flag("include", "include files matching pattern").Short('I').Strings(&in.Includes).Default()
+		cmd.Flag("exclude", "exclude files matching pattern").Short('E').Strings(&in.Excludes).Default()
+		cmd.Flag("clear", "clear screen every change").Bool(&in.Clear).Default(false)
 		cmd.Arg("command").String(&in.Command)
 		cmd.Args("args").Strings(&in.Args).Default()
 		cmd.Run(func(ctx context.Context) error { return c.Watch(ctx, in) })
