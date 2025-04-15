@@ -8,8 +8,8 @@ import (
 
 	"github.com/kballard/go-shellquote"
 	"github.com/livebud/watcher"
+	"github.com/matthewmueller/dev/internal/matcher"
 	"github.com/matthewmueller/dev/internal/sh"
-	"github.com/matthewmueller/glob"
 )
 
 type Watch struct {
@@ -36,7 +36,7 @@ func (c *CLI) Watch(ctx context.Context, in *Watch) error {
 	if err != nil {
 		return fmt.Errorf("failed to format command %s %+v: %w", in.Command, in.Args, err)
 	}
-	match, err := matcher(in.Includes, in.Excludes)
+	match, err := matcher.Compile(in.Includes, in.Excludes)
 	if err != nil {
 		return fmt.Errorf("failed to create matcher: %w", err)
 	}
@@ -49,7 +49,7 @@ func (c *CLI) Watch(ctx context.Context, in *Watch) error {
 		if len(events) == 0 {
 			return nil
 		}
-		if !match(events) {
+		if len(filterEvents(events, match)) == 0 {
 			return nil
 		}
 		if in.Clear {
@@ -97,92 +97,11 @@ func isMultipleCommands(cmd string) bool {
 	return false
 }
 
-func matcher(includes []string, excludes []string) (func(events []watcher.Event) bool, error) {
-	// Create include matcher
-	include, err := includer(includes...)
-	if err != nil {
-		return nil, err
+func filterEvents(events []watcher.Event, match func(path string) bool) (filtered []watcher.Event) {
+	for _, event := range events {
+		if match(event.Path) {
+			filtered = append(filtered, event)
+		}
 	}
-	// Create exclude matcher
-	exclude, err := excluder(excludes...)
-	if err != nil {
-		return nil, err
-	}
-	// Return the final matcher function
-	return func(events []watcher.Event) bool {
-		// Check if any of the events match the include/exclude rules
-		for _, event := range events {
-			if !exclude(event.Path) {
-				if include(event.Path) {
-					// At least one event matches the include rules
-					return true
-				}
-			}
-		}
-		// No events matched the include rules
-		return false
-	}, nil
-}
-
-func isGlob(pattern string) bool {
-	return glob.Base(pattern) != pattern
-}
-
-func compilePattern(pattern string) (func(path string) bool, error) {
-	if isGlob(pattern) {
-		matcher, err := glob.Compile(pattern)
-		if err != nil {
-			return nil, err
-		}
-		return matcher.Match, nil
-	}
-	return func(path string) bool {
-		return strings.Contains(path, pattern)
-	}, nil
-}
-
-func includer(includes ...string) (func(path string) bool, error) {
-	matchers := make([]func(path string) bool, len(includes))
-	for i, include := range includes {
-		matcher, err := compilePattern(include)
-		if err != nil {
-			return nil, err
-		}
-		matchers[i] = matcher
-	}
-	return func(path string) bool {
-		if len(matchers) == 0 {
-			return true
-		}
-		// Include if any of the matchers match
-		for _, matcher := range matchers {
-			if matcher(path) {
-				return true
-			}
-		}
-		return false
-	}, nil
-}
-
-func excluder(excludes ...string) (func(path string) bool, error) {
-	matchers := make([]func(path string) bool, len(excludes))
-	for i, exclude := range excludes {
-		matcher, err := compilePattern(exclude)
-		if err != nil {
-			return nil, err
-		}
-		matchers[i] = matcher
-	}
-	return func(path string) bool {
-		if len(matchers) == 0 {
-			return false
-		}
-		// Exclude if any of the matchers match
-		for _, matcher := range matchers {
-			if matcher(path) {
-				return true
-			}
-		}
-		return false
-	}, nil
+	return filtered
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/livebud/watcher"
 	"github.com/matthewmueller/dev/internal/graceful"
 	"github.com/matthewmueller/dev/internal/hot"
+	"github.com/matthewmueller/dev/internal/matcher"
 	"github.com/matthewmueller/dev/internal/pubsub"
 	"github.com/matthewmueller/virt"
 	"golang.org/x/sync/errgroup"
@@ -77,7 +78,7 @@ func (c *CLI) Serve(ctx context.Context, in *Serve) error {
 	if err != nil {
 		return err
 	}
-	match, err := matcher(in.Includes, in.Excludes)
+	match, err := matcher.Compile(in.Includes, in.Excludes)
 	if err != nil {
 		return fmt.Errorf("failed to create matcher: %w", err)
 	}
@@ -117,15 +118,17 @@ func handler(live http.Handler, fs http.Handler) http.Handler {
 	})
 }
 
-func (c *CLI) watchDir(ctx context.Context, ps pubsub.Publisher, dir string, match func(events []watcher.Event) bool) func() error {
+func (c *CLI) watchDir(ctx context.Context, ps pubsub.Publisher, dir string, match func(path string) bool) func() error {
 	return func() error {
 		return watcher.Watch(ctx, dir, func(events []watcher.Event) error {
 			if len(events) == 0 {
 				return nil
-			} else if !match(events) {
+			}
+			filtered := filterEvents(events, match)
+			if len(filtered) == 0 {
 				return nil
 			}
-			event := events[0]
+			event := filtered[0]
 			ps.Publish(string(event.Op), []byte(event.Path))
 			return nil
 		})

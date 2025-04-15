@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/livebud/cli"
 )
@@ -25,6 +26,21 @@ type CLI struct {
 	Env    []string
 }
 
+func (c *CLI) resolve(dir string) (string, error) {
+	if filepath.IsAbs(dir) {
+		return filepath.EvalSymlinks(dir)
+	}
+	absDir, err := filepath.Abs(c.Dir)
+	if err != nil {
+		return "", err
+	}
+	absDir, err = filepath.EvalSymlinks(absDir)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(absDir, dir), nil
+}
+
 func (c *CLI) Parse(ctx context.Context, args ...string) error {
 	cli := cli.New("dev", "personal dev tooling")
 
@@ -36,7 +52,7 @@ func (c *CLI) Parse(ctx context.Context, args ...string) error {
 		cmd.Flag("listen", "address to listen on").String(&in.Listen).Default(":3000")
 		cmd.Flag("live", "enable live reloading").Bool(&in.Live).Default(true)
 		cmd.Flag("open", "open browser").Bool(&in.Browser).Default(true)
-		cmd.Arg("dir").String(&in.Dir).Default(".")
+		cmd.Arg("dir", "directory to serve").String(&in.Dir).Default(".")
 		cmd.Run(func(ctx context.Context) error { return c.Serve(ctx, in) })
 	}
 
@@ -46,9 +62,33 @@ func (c *CLI) Parse(ctx context.Context, args ...string) error {
 		cmd.Flag("include", "include files matching pattern").Short('I').Strings(&in.Includes).Default()
 		cmd.Flag("exclude", "exclude files matching pattern").Short('E').Strings(&in.Excludes).Default()
 		cmd.Flag("clear", "clear screen every change").Bool(&in.Clear).Default(false)
-		cmd.Arg("command").String(&in.Command)
-		cmd.Args("args").Strings(&in.Args).Default()
+		cmd.Arg("command", "command to run").String(&in.Command)
+		cmd.Args("args", "command arguments").Strings(&in.Args).Default()
 		cmd.Run(func(ctx context.Context) error { return c.Watch(ctx, in) })
+	}
+
+	{ // txtar
+		cmd := cli.Command("txtar", "txtar tools")
+
+		{ // txtar pack <dir>
+			in := new(TxtarPack)
+			cmd := cmd.Command("pack", "pack a directory to stdout")
+			cmd.Flag("include", "include files matching pattern").Short('I').Strings(&in.Includes).Default()
+			cmd.Flag("exclude", "exclude files matching pattern").Short('E').Strings(&in.Excludes).Default()
+			cmd.Arg("dir", "directory to pack").String(&in.Dir)
+			cmd.Run(func(ctx context.Context) error { return c.TxtarPack(ctx, in) })
+		}
+
+		{ // txtar unpack
+			in := new(TxtarUnpack)
+			cmd := cmd.Command("unpack", "unpack a txtar file to a directory")
+			cmd.Flag("include", "include files matching pattern").Short('I').Strings(&in.Includes).Default()
+			cmd.Flag("exclude", "exclude files matching pattern").Short('E').Strings(&in.Excludes).Default()
+			cmd.Arg("path", "input txtar file").String(&in.Path)
+			cmd.Arg("dir", "output directory").String(&in.Dir)
+			cmd.Flag("force", "overwrite existing files").Bool(&in.Force).Default(false)
+			cmd.Run(func(ctx context.Context) error { return c.TxtarUnpack(ctx, in) })
+		}
 	}
 
 	return cli.Parse(ctx, os.Args[1:]...)
