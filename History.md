@@ -1,3 +1,7 @@
+# 0.0.6 / 2025-04-14
+
+- add `txtar pack` and `txtar unpack` commands
+
 # 0.0.5 / 2025-03-30
 
 - add ability to include and exclude patterns
