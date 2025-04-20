@@ -6,7 +6,7 @@ toolchain go1.24.0
 
 require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
-	github.com/livebud/cli v0.0.15
+	github.com/livebud/cli v0.0.17
 	github.com/livebud/watcher v0.0.2
 	github.com/matryer/is v1.4.1
 	github.com/matthewmueller/glob v0.0.5
