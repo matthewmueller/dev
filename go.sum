@@ -17,8 +17,8 @@ github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 h1:Z9n2FFNU
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:CzGEWj7cYgsdH8dAjBGEr58BoE7ScuLd+fwFZ44+/x8=
 github.com/lithammer/dedent v1.1.0 h1:VNzHMVCBNG1j0fh3OrsFRkVUwStdDArbgBWoPAffktY=
 github.com/lithammer/dedent v1.1.0/go.mod h1:jrXYCQtgg0nJiN+StA2KgR7w6CiQNv9Fd/Z9BP0jIOc=
-github.com/livebud/cli v0.0.14 h1:Xki1yXBm/jJYYN/sDg326lszbVW9yL0eeWx6KMU9B1M=
-github.com/livebud/cli v0.0.14/go.mod h1:3MpfBQxTLoZ/bUKjaC7vzcSNygvnj54NYo8+F0tSc6Y=
+github.com/livebud/cli v0.0.15 h1:zfquigZGTaAPlTkXxLX7oP1N1i96XD35frLok1gvYzg=
+github.com/livebud/cli v0.0.15/go.mod h1:3MpfBQxTLoZ/bUKjaC7vzcSNygvnj54NYo8+F0tSc6Y=
 github.com/livebud/color v0.0.2 h1:cxfLYpXPk445A6jc+8KNklBUWM6Ra8G09j3mbWAYtEc=
 github.com/livebud/color v0.0.2/go.mod h1:IBCW2CsRUnRuN9L42Vy9SkksJdhcnISoS+hOxa20VkU=
 github.com/livebud/watcher v0.0.2 h1:VPcEAnO/gH+D7TYHVs2m6kzpu+wJo/cRQb0kJoaiF+4=
