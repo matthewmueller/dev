@@ -1,3 +1,7 @@
+# 0.0.7 / 2025-04-19
+
+- bump cli to support --
+
 # 0.0.6 / 2025-04-14
 
 - add `txtar pack` and `txtar unpack` commands
