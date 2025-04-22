@@ -1,3 +1,7 @@
+# 0.0.9 / 2025-04-22
+
+- exclude files in .gitignore by default, unless --no-gitignore is provided
+
 # 0.0.8 / 2025-04-19
 
 - bump cli to support --
