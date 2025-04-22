@@ -7,7 +7,7 @@ import (
 )
 
 // Compile into a matcher function
-func Compile(includes []string, excludes []string) (func(path string) bool, error) {
+func Compile(includes []string, excludes []string, gitIgnore func(path string) (ignore bool)) (func(path string) bool, error) {
 	// Create include matcher
 	include, err := includer(includes...)
 	if err != nil {
@@ -20,7 +20,7 @@ func Compile(includes []string, excludes []string) (func(path string) bool, erro
 	}
 	// Return the final matcher function
 	return func(path string) bool {
-		if exclude(path) {
+		if exclude(path) || gitIgnore(path) {
 			return false
 		}
 		return include(path)

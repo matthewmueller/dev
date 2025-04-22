@@ -13,11 +13,12 @@ import (
 )
 
 type Watch struct {
-	Includes []string
-	Excludes []string
-	Clear    bool
-	Command  string
-	Args     []string
+	Clear       bool
+	Command     string
+	Args        []string
+	NoGitIgnore bool
+	Includes    []string
+	Excludes    []string
 }
 
 func (c *CLI) Watch(ctx context.Context, in *Watch) error {
@@ -36,7 +37,11 @@ func (c *CLI) Watch(ctx context.Context, in *Watch) error {
 	if err != nil {
 		return fmt.Errorf("failed to format command %s %+v: %w", in.Command, in.Args, err)
 	}
-	match, err := matcher.Compile(in.Includes, in.Excludes)
+	gitIgnore, err := c.gitIgnore(c.Dir, in.NoGitIgnore)
+	if err != nil {
+		return err
+	}
+	match, err := matcher.Compile(in.Includes, in.Excludes, gitIgnore)
 	if err != nil {
 		return fmt.Errorf("failed to create matcher: %w", err)
 	}

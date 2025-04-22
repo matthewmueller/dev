@@ -15,13 +15,18 @@ import (
 )
 
 type TxtarPack struct {
-	Includes []string
-	Excludes []string
-	Dir      string
+	Dir         string
+	Includes    []string
+	Excludes    []string
+	NoGitIgnore bool
 }
 
 func (c *CLI) TxtarPack(ctx context.Context, in *TxtarPack) error {
-	match, err := matcher.Compile(in.Includes, in.Excludes)
+	gitIgnore, err := c.gitIgnore(c.Dir, in.NoGitIgnore)
+	if err != nil {
+		return err
+	}
+	match, err := matcher.Compile(in.Includes, in.Excludes, gitIgnore)
 	if err != nil {
 		return err
 	}
@@ -64,15 +69,20 @@ func (c *CLI) TxtarPack(ctx context.Context, in *TxtarPack) error {
 }
 
 type TxtarUnpack struct {
-	Includes []string
-	Excludes []string
-	Path     string
-	Dir      string
-	Force    bool
+	Path        string
+	Dir         string
+	Force       bool
+	Includes    []string
+	Excludes    []string
+	NoGitIgnore bool
 }
 
 func (c *CLI) TxtarUnpack(ctx context.Context, in *TxtarUnpack) error {
-	match, err := matcher.Compile(in.Includes, in.Excludes)
+	gitIgnore, err := c.gitIgnore(c.Dir, in.NoGitIgnore)
+	if err != nil {
+		return err
+	}
+	match, err := matcher.Compile(in.Includes, in.Excludes, gitIgnore)
 	if err != nil {
 		return err
 	}

@@ -54,12 +54,13 @@ const htmlPage = `<!doctype html>
 `
 
 type Serve struct {
-	Listen   string
-	Live     bool
-	Dir      string
-	Browser  bool
-	Includes []string
-	Excludes []string
+	Listen      string
+	Live        bool
+	Dir         string
+	Browser     bool
+	Includes    []string
+	Excludes    []string
+	NoGitIgnore bool
 }
 
 func (c *CLI) Serve(ctx context.Context, in *Serve) error {
@@ -78,7 +79,11 @@ func (c *CLI) Serve(ctx context.Context, in *Serve) error {
 	if err != nil {
 		return err
 	}
-	match, err := matcher.Compile(in.Includes, in.Excludes)
+	gitIgnore, err := c.gitIgnore(c.Dir, in.NoGitIgnore)
+	if err != nil {
+		return err
+	}
+	match, err := matcher.Compile(in.Includes, in.Excludes, gitIgnore)
 	if err != nil {
 		return fmt.Errorf("failed to create matcher: %w", err)
 	}
