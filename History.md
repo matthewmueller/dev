@@ -1,3 +1,7 @@
+# 0.0.10 / 2025-05-18
+
+- add 'dev run <cmd> [args...]' and 'dev deps [path...]' commands
+
 # 0.0.9 / 2025-04-22
 
 - exclude files in .gitignore by default, unless --no-gitignore is provided
