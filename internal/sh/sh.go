@@ -33,6 +33,14 @@ func (c *Command) command(ctx context.Context, name string, args ...string) *exe
 	return cmd
 }
 
+func (c *Command) Run(ctx context.Context, name string, args ...string) error {
+	c.cmd = c.command(ctx, name, args...)
+	if err := c.cmd.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *Command) Start(ctx context.Context, name string, args ...string) (err error) {
 	c.cmd = c.command(ctx, name, args...)
 	if err := c.cmd.Start(); err != nil {

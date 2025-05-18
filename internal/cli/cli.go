@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -84,8 +85,18 @@ func (c *CLI) Parse(ctx context.Context, args ...string) error {
 		cmd.Run(func(ctx context.Context) error { return c.Watch(ctx, in) })
 	}
 
+	{ // run [flags] [path]
+		in := new(Run)
+		cmd := cli.Command("run", "run a Go file")
+		cmd.Flag("clear", "clear screen every change").Bool(&in.Clear).Default(false)
+		cmd.Flag("chdir", "change directory").Short('C').String(&in.Chdir).Default(".")
+		cmd.Arg("path", "path to Go file").String(&in.Path)
+		cmd.Args("args", "command arguments").Strings(&in.Args).Default()
+		cmd.Run(func(ctx context.Context) error { return c.Run(ctx, in) })
+	}
+
 	{ // txtar
-		cmd := cli.Command("txtar", "txtar tools")
+		cmd := cli.Command("txtar", "txtar tools").Advanced()
 
 		{ // txtar pack <dir>
 			in := new(TxtarPack)
@@ -110,5 +121,19 @@ func (c *CLI) Parse(ctx context.Context, args ...string) error {
 		}
 	}
 
+	{ // deps
+		in := new(Deps)
+		cmd := cli.Command("deps", "list dependencies").Advanced()
+		cmd.Args("path", "path to file").Strings(&in.Paths).Default()
+		cmd.Flag("tests", "include test dependencies").Bool(&in.IncludeTests).Default(false)
+		cmd.Flag("modules", "include installed modules").Bool(&in.IncludeModules).Default(false)
+		cmd.Flag("stdlib", "include standard library").Bool(&in.IncludeStdlib).Default(false)
+		cmd.Run(func(ctx context.Context) error { return c.Deps(ctx, in) })
+	}
+
 	return cli.Parse(ctx, os.Args[1:]...)
+}
+
+func clear() {
+	fmt.Fprint(os.Stdout, "\033[H\033[2J")
 }

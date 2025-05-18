@@ -68,10 +68,6 @@ func (c *CLI) Watch(ctx context.Context, in *Watch) error {
 	})
 }
 
-func clear() {
-	fmt.Fprint(os.Stdout, "\033[H\033[2J")
-}
-
 func formatCommand(cmd string, args []string) (string, []string, error) {
 	if len(args) > 0 {
 		return cmd, args, nil
