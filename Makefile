@@ -17,3 +17,6 @@ release: test
 	@ git push origin main "v$(VERSION)"
 	@ go run github.com/cli/cli/v2/cmd/gh@latest release create --generate-notes "v$(VERSION)"
 	@ go install .
+
+install:
+	@ go install .
