@@ -12,6 +12,6 @@ func main() {
 	cli := cli.New()
 	ctx := context.Background()
 	if err := cli.Parse(ctx, os.Args[1:]...); err != nil {
-		logs.Error(err.Error())
+		logs.Fatal(err)
 	}
 }
