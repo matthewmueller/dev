@@ -8,12 +8,13 @@ precommit: test
 
 release: VERSION := $(shell awk '/[0-9]+\.[0-9]+\.[0-9]+/ {print $$2; exit}' Changelog.md)
 release: VERSION_FILE := internal/cli/version.go
+release: CHANGELOG_FILE := Changelog.md
 release: test
 	@ go mod tidy
 	@ test -n "$(VERSION)" || (echo "Unable to read the version." && false)
 	@ test -z "`git tag -l v$(VERSION)`" || (echo "Aborting because the v$(VERSION) tag already exists." && false)
-	@ test -z "`git status --porcelain | grep -vE 'M (Changelog\.md|$(VERSION_FILE))'`" || (echo "Aborting from uncommitted changes." && false)
-	@ test -n "`git status --porcelain | grep -v 'M (Changelog\.md)'`" || (echo "Changelog.md must have changes" && false)
+	@ test -z "`git status --porcelain | grep -vE 'M ($(CHANGELOG_FILE)|$(VERSION_FILE))'`" || (echo "Aborting from uncommitted changes." && false)
+	@ test -n "`git status --porcelain | grep -v 'M ($(CHANGELOG_FILE))'`" || (echo "Changelog.md must have changes" && false)
 	@ go run github.com/x-motemen/gobump/cmd/gobump@latest set $(VERSION) -w $(VERSION_FILE)
 	@ test -n "`git status --porcelain | grep -v 'M ($(VERSION_FILE))'`" || (echo "version.go must have changes" && false)
 	@ git add -A && git commit -m "Release v$(VERSION)"
