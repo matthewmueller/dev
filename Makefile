@@ -6,14 +6,18 @@ test:
 
 precommit: test
 
-release: VERSION := $(shell awk '/[0-9]+\.[0-9]+\.[0-9]+/ {print $$2; exit}' History.md)
+release: VERSION := $(shell awk '/[0-9]+\.[0-9]+\.[0-9]+/ {print $$2; exit}' Changelog.md)
+release: VERSION_FILE := internal/cli/version.go
 release: test
 	@ go mod tidy
 	@ test -n "$(VERSION)" || (echo "Unable to read the version." && false)
 	@ test -z "`git tag -l v$(VERSION)`" || (echo "Aborting because the v$(VERSION) tag already exists." && false)
-	@ test -z "`git status --porcelain | grep -vE 'History\.md'`" || (echo "Aborting from uncommitted changes." && false)
-	@ git add History.md
-	@ git commit -m "Release v$(VERSION)"
+	@ test -z "`git status --porcelain | grep -vE 'M (Changelog\.md|$(VERSION_FILE))'`" || (echo "Aborting from uncommitted changes." && false)
+	@ test -n "`git status --porcelain | grep -v 'M (Changelog\.md)'`" || (echo "Changelog.md must have changes" && false)
+	@ go run github.com/x-motemen/gobump/cmd/gobump@latest set $(VERSION) -w $(VERSION_FILE)
+	@ test -n "`git status --porcelain | grep -v 'M ($(VERSION_FILE))'`" || (echo "version.go must have changes" && false)
+	@ git add -A && git commit -m "Release v$(VERSION)"
+	@ test -z "`git status --porcelain`" || (echo "Aborting from uncommitted changes." && false)
 	@ git tag "v$(VERSION)"
 	@ git push origin main "v$(VERSION)"
 	@ go run github.com/cli/cli/v2/cmd/gh@latest release create --generate-notes "v$(VERSION)"
