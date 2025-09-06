@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/matthewmueller/dev/internal/sh"
+	"github.com/matthewmueller/dev/internal/shell"
+	"github.com/matthewmueller/text"
 )
 
 type Run struct {
@@ -35,7 +37,12 @@ func (c *CLI) Run(ctx context.Context, in *Run) error {
 		return err
 	}
 
-	cmd := sh.Command{
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		return err
+	}
+
+	exec := shell.Exec{
 		Stderr: c.Stderr,
 		Stdout: c.Stdout,
 		Stdin:  c.Stdin,
@@ -43,7 +50,25 @@ func (c *CLI) Run(ctx context.Context, in *Run) error {
 		Dir:    dir,
 	}
 
-	if err := cmd.Start(ctx, "go", formatGoRun(in.Path, in.Args...)...); err != nil {
+	binName := text.Snake(filepath.Join(dir, in.Path))
+	binDir := filepath.Join(cacheDir, "go-dev", "run")
+	binPath := filepath.Join(binDir, binName)
+	if err := os.MkdirAll(binDir, 0755); err != nil {
+		return err
+	}
+
+	// Build the binary
+	if err := exec.Command("go", "build",
+		"-mod", "mod",
+		"-o", binPath,
+		in.Path,
+	).Run(ctx); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+
+	// Start the binary
+	process, err := exec.Command(binPath, in.Args...).Start()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
 
@@ -95,10 +120,22 @@ func (c *CLI) Run(ctx context.Context, in *Run) error {
 				if in.Clear {
 					clear()
 				}
-				if err := cmd.Restart(ctx); err != nil {
+
+				// Rebuild the binary
+				if err := exec.Command("go", "build",
+					"-mod", "mod",
+					"-o", binPath,
+					in.Path,
+				).Run(ctx); err != nil {
+					fmt.Fprintln(os.Stderr, err)
+				}
+
+				proc, err := process.Restart(ctx)
+				if err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					continue
 				}
+				process = proc
 			}
 		}
 	}
@@ -141,10 +178,6 @@ func rename(watcher *fsnotify.Watcher, path string) error {
 func remove(watcher *fsnotify.Watcher, path string) error {
 	watcher.Remove(path)
 	return nil
-}
-
-func formatGoRun(path string, args ...string) []string {
-	return append([]string{"run", path}, args...)
 }
 
 // computeStamp uses path, size, mode and modtime to try and ensure this is a

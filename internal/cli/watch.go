@@ -9,7 +9,7 @@ import (
 	"github.com/kballard/go-shellquote"
 	"github.com/livebud/watcher"
 	"github.com/matthewmueller/dev/internal/matcher"
-	"github.com/matthewmueller/dev/internal/sh"
+	"github.com/matthewmueller/dev/internal/shell"
 )
 
 type Watch struct {
@@ -26,7 +26,7 @@ func (c *CLI) Watch(ctx context.Context, in *Watch) error {
 		clear()
 	}
 	// Run initially
-	cmd := sh.Command{
+	exec := shell.Exec{
 		Stderr: c.Stderr,
 		Stdout: c.Stdout,
 		Stdin:  c.Stdin,
@@ -45,7 +45,8 @@ func (c *CLI) Watch(ctx context.Context, in *Watch) error {
 	if err != nil {
 		return fmt.Errorf("failed to create matcher: %w", err)
 	}
-	if err := cmd.Start(ctx, command, args...); err != nil {
+	process, err := exec.Command(command, args...).Start()
+	if err != nil {
 		// Don't exit on errors
 		fmt.Fprintln(os.Stderr, err)
 	}
@@ -60,10 +61,12 @@ func (c *CLI) Watch(ctx context.Context, in *Watch) error {
 		if in.Clear {
 			clear()
 		}
-		if err := cmd.Restart(ctx); err != nil {
+		proc, err := process.Restart(ctx)
+		if err != nil {
 			// Don't exit on errors
 			fmt.Fprintln(os.Stderr, err)
 		}
+		process = proc
 		return nil
 	})
 }

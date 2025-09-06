@@ -11,6 +11,7 @@ require (
 	github.com/matryer/is v1.4.1
 	github.com/matthewmueller/glob v0.0.5
 	github.com/matthewmueller/logs v0.0.6
+	github.com/matthewmueller/text v0.0.0-20210424201111-ec1e4af8dfe8
 	github.com/matthewmueller/virt v0.0.12
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	golang.org/x/sync v0.10.0
@@ -19,7 +20,7 @@ require (
 
 require (
 	github.com/bep/debounce v1.2.1 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/livebud/color v0.0.2 // indirect
