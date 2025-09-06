@@ -1,3 +1,7 @@
+# 0.0.14 / 2025-09-06
+
+- bump deps and fix breaking change
+
 # 0.0.13 / 2025-09-06
 
 - add a `v` to `dev version`
