@@ -13,10 +13,10 @@ release: test
 	@ go mod tidy
 	@ test -n "$(VERSION)" || (echo "Unable to read the version." && false)
 	@ test -z "`git tag -l v$(VERSION)`" || (echo "Aborting because the v$(VERSION) tag already exists." && false)
-	test -z "`git status --porcelain | grep -vE 'M ($(CHANGELOG_FILE)|$(VERSION_FILE))'`" || (echo "Aborting from uncommitted changes." && false)
-	@ test -n "`git status --porcelain | grep -v 'M ($(CHANGELOG_FILE))'`" || (echo "Changelog.md must have changes" && false)
+	@ test -z "`git status --porcelain | grep -vE '^(AM|[\?]{2}) ($(CHANGELOG_FILE)|$(VERSION_FILE))'`" || (echo "Aborting from uncommitted changes." && false)
+	@ test -n "`git status --porcelain | grep -v '^(AM|[\?]{2}) ($(CHANGELOG_FILE))'`" || (echo "Changelog.md must have changes" && false)
 	@ go run github.com/x-motemen/gobump/cmd/gobump@latest set $(VERSION) -w $(VERSION_FILE)
-	@ test -n "`git status --porcelain | grep -v 'M ($(VERSION_FILE))'`" || (echo "version.go must have changes" && false)
+	@ test -n "`git status --porcelain | grep -v '^(AM|[\?]{2}) ($(VERSION_FILE))'`" || (echo "version.go must have changes" && false)
 	@ git add -A && git commit -m "Release v$(VERSION)"
 	@ test -z "`git status --porcelain`" || (echo "Aborting from uncommitted changes." && false)
 	@ git tag "v$(VERSION)"
