@@ -1,3 +1,9 @@
+# 0.0.11 / 2025-09-06
+
+- modernize the syntax
+- remove syscall.SysProcAttr, which was prone to not be cleaned up
+- add an install command
+
 # 0.0.10 / 2025-05-18
 
 - add 'dev run <cmd> [args...]' and 'dev deps [path...]' commands
