@@ -13,7 +13,7 @@ release: test
 	@ go mod tidy
 	@ test -n "$(VERSION)" || (echo "Unable to read the version." && false)
 	@ test -z "`git tag -l v$(VERSION)`" || (echo "Aborting because the v$(VERSION) tag already exists." && false)
-	@ test -z "`git status --porcelain | grep -vE '^(A|M|[\?]{2}) ($(CHANGELOG_FILE)|$(VERSION_FILE))'`" || (echo "Aborting from uncommitted changes." && false)
+	@ test -z "`git status --porcelain | grep -vE '(A|M|[\?]{2}) ($(CHANGELOG_FILE)|$(VERSION_FILE))'`" || (echo "Aborting from uncommitted changes." && false)
 	@ test -n "`git status --porcelain | grep -v 'M ($(CHANGELOG_FILE))'`" || (echo "Changelog.md must have changes" && false)
 	@ go run github.com/x-motemen/gobump/cmd/gobump@latest set $(VERSION) -w $(dir $(VERSION_FILE))
 	@ test -n "`git status --porcelain | grep -v 'M ($(VERSION_FILE))'`" || (echo "$(VERSION_FILE) must have changes" && false)
