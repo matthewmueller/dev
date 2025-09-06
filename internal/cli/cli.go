@@ -134,7 +134,7 @@ func (c *CLI) Parse(ctx context.Context, args ...string) error {
 	{ // version
 		cmd := cli.Command("version", "print the version")
 		cmd.Run(func(ctx context.Context) error {
-			fmt.Fprintln(c.Stdout, version)
+			fmt.Fprintln(c.Stdout, "v"+version)
 			return nil
 		})
 	}
