@@ -1,3 +1,7 @@
+# 0.0.13 / 2025-09-06
+
+- add a `v` to `dev version`
+
 # 0.0.12 / 2025-09-06
 
 - add `version` command
