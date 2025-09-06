@@ -173,7 +173,7 @@ func (d dirFS) Open(name string) (fs.File, error) {
 	if bytes.Contains(html, []byte("<html")) {
 		html = append(html, []byte(liveReloadScript)...)
 	} else {
-		html = []byte(fmt.Sprintf(htmlPage, liveReloadScript, string(html)))
+		html = fmt.Appendf(nil, htmlPage, liveReloadScript, string(html))
 	}
 	// Create a buffered file
 	bf := &virt.File{
@@ -187,7 +187,7 @@ func (d dirFS) Open(name string) (fs.File, error) {
 
 // Find the next available port starting at 3000
 func findNextPort(host string, port int) (net.Listener, int, error) {
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port+i))
 		if err == nil {
 			return ln, port + i, nil

@@ -100,7 +100,6 @@ func (c *CLI) TxtarUnpack(ctx context.Context, in *TxtarUnpack) error {
 	}
 	eg := &errgroup.Group{}
 	for _, file := range ar.Files {
-		file := file
 		if !match(file.Name) {
 			continue
 		}
@@ -150,7 +149,7 @@ func packArchive(ar *txtar.Archive) []byte {
 
 func fromBase64(data string) ([]byte, error) {
 	cleaned := ""
-	for _, line := range strings.Split(data, "\n") {
+	for line := range strings.SplitSeq(data, "\n") {
 		cleaned += line
 	}
 	return base64.StdEncoding.DecodeString(cleaned)
